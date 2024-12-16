@@ -20,7 +20,10 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
 
  
 
-//fetch the leads
+/////////////////---------------------------------------workiong live-----------------------------------------------------------------------//////////////////////////////////////// 
+ 
+
+/////--------------fetch newly created  leads and stpre it on db-------------------------////
 
 
 app.post('/webhook/zoho/leads', async (req, res) => {
@@ -40,28 +43,24 @@ app.post('/webhook/zoho/leads', async (req, res) => {
 });
 
 
+//////---------------------------------------------------------------------------------//////
 
 
-
-
-
-
-
-
+//////------------------------ live working condition for the dynamic web hook for leads and solution tab---------------------////////////
 
 
 app.post('/webhook/sendgrid', async (req, res) => {
   const accessToken = await getAccessToken();
-  console.log(accessToken, "accessToken");
+  console.log(accessToken, "accessToken"); 
 
   try {
     // Use webhook data dynamically
     const webhookData = req.body; // The SendGrid event data
-    console.log('Received SendGrid webhook data:', webhookData);   ///console the web hookdata 
+    console.log('Received SendGrid webhook data:', webhookData);   // console the webhook data
 
     // Extract emails from the webhookData
-    const emails = webhookData.map((item) => item.email.trim());       ///select the eamil a from the compnig web hook data
-    const leads = await Lead.find({ Email: { $in: emails } });         ////mayching with the leads data throgh email
+    const emails = webhookData.map((item) => item.email.trim()); // select the email from the campaign webhook data
+    const leads = await Lead.find({ Email: { $in: emails } }); // matching with the leads data through email
 
     // Check if any matching leads were found
     if (leads.length > 0) {
@@ -71,11 +70,11 @@ app.post('/webhook/sendgrid', async (req, res) => {
         );
         return {
           ...item,
-          Lead_Owner: lead ? lead.Lead_Owner : null,       ///finding the lead owner name
+          Lead_Owner: lead ? lead.Lead_Owner : null, // finding the lead owner name
         };
       });
 
-      console.log(responseData, "responseData");            ///console the responce data with all the details
+      console.log(responseData, "responseData"); // console the response data with all the details
 
       // Send the response to the client first (asynchronously)
       res.status(200).json({
@@ -83,9 +82,7 @@ app.post('/webhook/sendgrid', async (req, res) => {
         data: responseData,
       });
 
-
-
-      ///zoho functions for to store tyhe data
+      // Zoho functions to store the data
       const zohoApiUrl = 'https://www.zohoapis.com/crm/v5/Solutions';
 
       // Process data for Zoho CRM
@@ -136,6 +133,38 @@ app.post('/webhook/sendgrid', async (req, res) => {
 
             console.log(`New record successfully created for ${email} with Message_ID ${sg_message_id}`);
           }
+
+          // Step 2: Now, update the "Event" field in Zoho CRM Leads tab
+          const searchLeadsApiUrl = `https://www.zohoapis.com/crm/v5/Leads/search?criteria=(Email:equals:${email})`;
+          const leadRecordResponse = await axios.get(searchLeadsApiUrl, {
+            headers: {
+              Authorization: `Zoho-oauthtoken ${accessToken}`,
+            },
+          });
+
+          if (leadRecordResponse.data?.data?.length > 0) {
+            const leadRecordId = leadRecordResponse.data.data[0].id;
+            const updateLeadApiUrl = `https://www.zohoapis.com/crm/v5/Leads/${leadRecordId}`;
+            const leadUpdateData = {
+              data: [
+                {
+                  Event: event,  // Updating the "Event" field in Leads tab
+                  I_P: ip,
+                  Date_and_Time: new Date(timestamp * 1000).toISOString(),
+                  Event_ID: sg_event_id,
+                  Message_ID: sg_message_id,
+                },
+              ],
+            };
+
+            await axios.put(updateLeadApiUrl, leadUpdateData, {
+              headers: {
+                Authorization: `Zoho-oauthtoken ${accessToken}`,
+              },
+            });
+
+            console.log(`Event field successfully updated for lead with Email: ${email}`);
+          }
         } catch (zohoError) {
           console.error("Error updating/creating record in Zoho CRM:", zohoError.message || zohoError.response?.data || zohoError);
         }
@@ -151,6 +180,8 @@ app.post('/webhook/sendgrid', async (req, res) => {
   }
 });
 
+
+///////////-----------------------------------------------------------------------------------///////////////////////////////////////////////
 
 
 

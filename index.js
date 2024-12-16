@@ -23,7 +23,7 @@ mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
 /////////////////---------------------------------------workiong live-----------------------------------------------------------------------//////////////////////////////////////// 
  
 
-/////--------------fetch newly created  leads and stpre it on db-------------------------////
+/////--------------fetch newly created  leads and store it on db-------------------------////
 
 
 app.post('/webhook/zoho/leads', async (req, res) => {

@@ -184,6 +184,32 @@ app.post('/webhook/sendgrid', async (req, res) => {
 ///////////-----------------------------------------------------------------------------------///////////////////////////////////////////////
 
 
+//////---------------controller to delite the the leads dat from the database when delite web hook trigried-----------///////////
+
+app.post('/webhook/zoho/leads/delete', async (req, res) => {
+  try {
+    const webhookData = req.body;
+    const email = webhookData.Email;  // Get the email from the webhook
+
+    // Find the lead by email and delete it from the database
+    const lead = await Lead.findOneAndDelete({ email: email });
+
+    if (lead) {
+      console.log('Lead deleted successfully:', lead);
+      res.status(200).send('Lead deleted successfully');
+    } else {
+      console.log('No lead found with the given email');
+      res.status(404).send('No lead found with the given email');
+    }
+  } catch (error) {
+    console.error('Error processing delete webhook:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+/////////-----------------------------------------------------------------------------------------------////////////
+
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

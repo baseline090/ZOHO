@@ -188,17 +188,20 @@ app.post('/webhook/sendgrid', async (req, res) => {
 
 app.post('/webhook/zoho/leads/delete', async (req, res) => {
   try {
-    const webhookData = req.body;
-    const email = webhookData.Email;  // Get the email from the webhook
+    const webhookData = req.body; // Incoming webhook data
+    console.log('Webhook Data:', webhookData);
 
-    // Find the lead by email and delete it from the database
-    const lead = await Lead.findOneAndDelete({ email: email });
+    const email = webhookData.Email; // Extract Email
+    console.log('Extracted Email:', email);
+
+    // Case-insensitive query
+    const lead = await Lead.findOneAndDelete({ Email: { $regex: new RegExp(`^${email}$`, 'i') } });
 
     if (lead) {
       console.log('Lead deleted successfully:', lead);
       res.status(200).send('Lead deleted successfully');
     } else {
-      console.log('No lead found with the given email');
+      console.log('No lead found with the given email:', email);
       res.status(404).send('No lead found with the given email');
     }
   } catch (error) {
@@ -207,7 +210,11 @@ app.post('/webhook/zoho/leads/delete', async (req, res) => {
   }
 });
 
+
 /////////-----------------------------------------------------------------------------------------------////////////
+
+
+
 
 
 
